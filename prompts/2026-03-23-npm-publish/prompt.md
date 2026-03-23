@@ -8,7 +8,7 @@ This prompt covers building the binaries, packaging for npm, and publishing.
 
 ## Auth
 
-- NPM auth token is in `/Users/miroslavsekera/r/contextractor-private/.env` as `NPM_TOKEN=...`
+- NPM auth token is in `.env` as `NPM_TOKEN=...`
 - Use token-based auth: set `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` in a local `.npmrc` (do NOT commit it)
 - Load the token from `.env` before publishing
 

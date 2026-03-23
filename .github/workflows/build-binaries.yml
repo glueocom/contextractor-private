@@ -1,9 +1,5 @@
-# CI runs in glueocom/contextractor-private (private repo).
-# Releases are created on contextractor/contextractor (public repo).
-#
 # Required secrets:
-#   PUBLIC_REPO_TOKEN — GitHub PAT with `contents:write` on contextractor/contextractor
-#   NPM_TOKEN         — npmjs.com publish token
+#   NPM_TOKEN — npmjs.com publish token
 
 name: Build and Release Binaries
 
@@ -17,8 +13,8 @@ on:
         description: "Release tag (e.g. v0.1.0)"
         required: true
 
-env:
-  PUBLIC_REPO: contextractor/contextractor
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -104,15 +100,13 @@ jobs:
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create release on public repo
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          repository: ${{ env.PUBLIC_REPO }}
           tag_name: ${{ steps.tag.outputs.tag }}
           name: ${{ steps.tag.outputs.tag }}
           files: binaries/*
           generate_release_notes: true
-          token: ${{ secrets.PUBLIC_REPO_TOKEN }}
 
   publish-npm:
     needs: release

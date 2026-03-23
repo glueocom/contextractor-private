@@ -183,7 +183,7 @@ RUN uv sync --frozen --no-dev --directory apps/contextractor-apify
 Package: `contextractor` on npmjs.com
 Repository: `https://github.com/contextractor/contextractor`
 
-The npm package is a lightweight wrapper (~2KB) that downloads the correct platform binary from GitHub releases during `postinstall`. CI builds binaries for all 5 platforms via GitHub Actions in `glueocom/contextractor-private`, uploads releases to `contextractor/contextractor`.
+The npm package is a lightweight wrapper (~2KB) that downloads the correct platform binary from GitHub releases during `postinstall`. CI builds binaries for all 5 platforms via GitHub Actions and uploads them to GitHub releases.
 
 ```bash
 npm install -g contextractor   # Install globally
@@ -191,7 +191,7 @@ npx contextractor config.yaml  # Or run via npx
 ```
 
 ### Release flow
-1. Push tag `v*` to `glueocom/contextractor-private`
+1. Push tag `v*` to `contextractor/contextractor`
 2. GitHub Actions builds binaries on 5 platforms
-3. Binaries uploaded to `contextractor/contextractor` GitHub release
+3. Binaries uploaded to GitHub release
 4. npm package published with matching version
