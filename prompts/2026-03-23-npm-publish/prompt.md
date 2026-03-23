@@ -16,6 +16,7 @@ This prompt covers building the binaries, packaging for npm, and publishing.
 
 - Package name: `contextractor` (unscoped)
 - This name is owned by us — use it directly, no fallback needed
+- GitHub repository: `https://github.com/contextractor/contextractor`
 
 ## Steps
 
