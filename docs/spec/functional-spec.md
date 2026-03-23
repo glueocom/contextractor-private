@@ -2,9 +2,64 @@
 
 ## Overview
 
-Contextractor crawls websites and extracts clean, readable content using Trafilatura. Content is stored in Key-Value Store with metadata in Dataset.
+Contextractor crawls websites and extracts clean, readable content using Trafilatura. Available as:
 
-## Input
+1. **Apify Actor** — cloud platform, content stored in Key-Value Store + Dataset
+2. **Standalone CLI** — local tool, content saved as files to disk
+3. **npm package** (`contextractor`) — installs the CLI via npm/npx
+
+---
+
+## Standalone CLI
+
+### Installation
+
+```bash
+# Via npm
+npm install -g contextractor
+# Or run directly
+npx contextractor config.yaml
+```
+
+### CLI Usage
+
+```bash
+contextractor <config-file> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--precision` | High precision mode (less noise) |
+| `--recall` | High recall mode (more content) |
+| `--no-links` | Exclude links from output |
+| `--no-comments` | Exclude comments from output |
+| `--output-dir`, `-o` | Override output directory |
+| `--format`, `-f` | Override output format (txt, markdown, json, xml, xmltei) |
+| `--verbose`, `-v` | Enable verbose logging |
+
+### Config File (YAML or JSON)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| urls | array | required | URLs to extract content from |
+| maxPages | integer | 0 | Max pages to crawl (0 = unlimited) |
+| outputFormat | string | "markdown" | Output format: txt, markdown, json, xml, xmltei |
+| outputDir | string | "./output" | Directory for extracted content |
+| crawlDepth | integer | 0 | How deep to follow links (0 = start URLs only) |
+| headless | boolean | true | Browser headless mode |
+| extraction | object | {} | TrafilaturaConfig options (see below) |
+
+Config merge order: `defaults → config file → CLI flags`
+
+### Output
+
+One file per crawled page, named from URL slug (e.g. `example-com-page.md`). Metadata header (title, author, date, URL) included when available.
+
+---
+
+## Apify Actor
+
+### Input
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -24,9 +79,9 @@ Contextractor crawls websites and extracts clean, readable content using Trafila
 | initialCookies | array | [] | Pre-set cookies for authentication (encrypted) |
 | customHttpHeaders | object | {} | Custom HTTP headers for all requests |
 
-### trafilaturaConfig
+### trafilaturaConfig / extraction
 
-Optional JSON object with Trafilatura extraction options. When empty `{}` or omitted, uses balanced defaults.
+Shared extraction options used by both the Apify Actor (`trafilaturaConfig` key) and standalone CLI (`extraction` key in config file). When empty `{}` or omitted, uses balanced defaults.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -52,9 +107,9 @@ Optional JSON object with Trafilatura extraction options. When empty `{}` or omi
 
 **Note:** Keys accept both camelCase (JSON convention) and snake_case (Python convention). camelCase is converted to snake_case internally.
 
-## Output
+### Output
 
-### Dataset Entry
+#### Dataset Entry
 
 ```json
 {
@@ -89,7 +144,7 @@ Optional JSON object with Trafilatura extraction options. When empty `{}` or omi
 - `extractedMarkdown`, `extractedText`, etc.: entire object only present if that export is enabled
 - `metadata`: extracted from trafilatura
 
-### Key-Value Store
+#### Key-Value Store
 
 Named `content`. Files stored with MD5-based keys:
 - `{hash}-raw.html` - Raw HTML

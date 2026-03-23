@@ -5,22 +5,39 @@
 - Python 3.12+
 - uv workspace monorepo with hatchling build system
 - Crawlee for Python with PlaywrightCrawler
-- Apify SDK
+- Apify SDK (Apify actor only)
 - contextractor-engine library (Trafilatura wrapper)
+- Typer CLI (standalone app)
+- npm package with PyInstaller binaries (standalone distribution)
 
 ## Architecture
 
-Two-package monorepo:
+Three-package monorepo:
 - `packages/contextractor_engine/` - Library package, depends on trafilatura only
-- `apps/contextractor/` - Actor application, depends on engine + apify + crawlee
+- `apps/contextractor-apify/` - Apify Actor application, depends on engine + apify + crawlee
+- `apps/contextractor-standalone/` - Standalone CLI, depends on engine + crawlee (no Apify)
 
+### Apify Actor
 ```
 Input URLs → PlaywrightCrawler → ContentExtractor → KVS (blobs) + Dataset (metadata)
 ```
 
+### Standalone CLI
+```
+Config file (YAML/JSON) → PlaywrightCrawler → ContentExtractor → Output files (one per page)
+```
+
+### npm Distribution
+```
+npm install contextractor → postinstall downloads platform binary from GitHub releases
+                          → npx contextractor config.yaml
+```
+
+GitHub Actions builds PyInstaller binaries for 5 platforms (linux-x64, linux-arm64, darwin-x64, darwin-arm64, win-x64) and uploads to GitHub releases on `contextractor/contextractor`. The npm package (`contextractor` on npmjs.com) is a ~2KB wrapper that downloads the correct binary at install time.
+
 ## Key Implementation Details
 
-### Handler Pattern
+### Apify Actor Handler Pattern
 
 Handler must be defined inside `async with Actor:` context. Config passed via `Request.user_data`:
 
@@ -33,14 +50,7 @@ async with Actor:
     async def handler(ctx: PlaywrightCrawlingContext) -> None:
         config = ctx.request.user_data.get('config', {})
         trafilatura_config_raw = config.get('trafilatura_config_raw', {})
-
-        # Build TrafilaturaConfig from raw dict (JSON-serializable in user_data)
-        if trafilatura_config_raw:
-            normalized = normalize_config_keys(trafilatura_config_raw)
-            filtered = {k: v for k, v in normalized.items() if v is not None}
-            trafilatura_config = TrafilaturaConfig(**filtered)
-        else:
-            trafilatura_config = TrafilaturaConfig.balanced()
+        trafilatura_config = TrafilaturaConfig.from_json_dict(trafilatura_config_raw)
 
         extractor = ContentExtractor(config=trafilatura_config)
         html = await ctx.page.content()
@@ -49,6 +59,22 @@ async with Actor:
     requests = [Request.from_url(url, user_data={'config': config}) for url in start_urls]
     await crawler.run(requests)
 ```
+
+### Standalone CLI
+
+YAML/JSON config file → `CrawlConfig.from_file()` → crawlee PlaywrightCrawler → output files.
+
+```bash
+# Run with config file
+contextractor config.yaml
+
+# Override extraction options via CLI flags
+contextractor config.yaml --precision --no-comments -o ./results -f markdown
+```
+
+Config merge order: `defaults → config file → CLI flags`
+
+CLI shortcut flags: `--precision`, `--recall`, `--no-links`, `--no-comments`
 
 ### Content-Type Headers
 
@@ -109,11 +135,20 @@ Engine package (`packages/contextractor_engine/`):
 trafilatura>=2.0.0
 ```
 
-Actor package (`apps/contextractor/`):
+Apify Actor (`apps/contextractor-apify/`):
 ```
 apify>=2.0.0,<4.0.0
 crawlee[playwright]>=0.4.0
 contextractor-engine (workspace)
+browserforge<1.2.4
+```
+
+Standalone CLI (`apps/contextractor-standalone/`):
+```
+crawlee[playwright]>=0.4.0
+contextractor-engine (workspace)
+typer>=0.15.0
+pyyaml>=6.0
 browserforge<1.2.4
 ```
 
@@ -126,6 +161,12 @@ Build engine wheel for distribution:
 uv build --package contextractor-engine --out-dir dist/
 ```
 
+Build standalone CLI binary (current platform):
+```bash
+uv run python apps/contextractor-standalone/build.py
+# Output: apps/contextractor-standalone/dist/contextractor-{platform}-{arch}
+```
+
 ## Docker
 
 uv-based install with frozen lockfile:
@@ -133,6 +174,24 @@ uv-based install with frozen lockfile:
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 COPY packages/contextractor_engine/ ./packages/contextractor_engine/
-COPY apps/contextractor/ ./apps/contextractor/
-RUN uv sync --frozen --no-dev --directory apps/contextractor
+COPY apps/contextractor-apify/ ./apps/contextractor-apify/
+RUN uv sync --frozen --no-dev --directory apps/contextractor-apify
 ```
+
+## npm Distribution
+
+Package: `contextractor` on npmjs.com
+Repository: `https://github.com/contextractor/contextractor`
+
+The npm package is a lightweight wrapper (~2KB) that downloads the correct platform binary from GitHub releases during `postinstall`. CI builds binaries for all 5 platforms via GitHub Actions in `glueocom/contextractor-private`, uploads releases to `contextractor/contextractor`.
+
+```bash
+npm install -g contextractor   # Install globally
+npx contextractor config.yaml  # Or run via npx
+```
+
+### Release flow
+1. Push tag `v*` to `glueocom/contextractor-private`
+2. GitHub Actions builds binaries on 5 platforms
+3. Binaries uploaded to `contextractor/contextractor` GitHub release
+4. npm package published with matching version
