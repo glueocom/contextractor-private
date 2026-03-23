@@ -14,8 +14,8 @@ This prompt covers building the binaries, packaging for npm, and publishing.
 
 ## Package name
 
-- Scope: `@contextractor/cli` (or `contextractor` if available — check first with `npm view contextractor`)
-- If the unscoped name is taken, use `@contextractor/cli`
+- Package name: `contextractor` (unscoped)
+- This name is owned by us — use it directly, no fallback needed
 
 ## Steps
 
