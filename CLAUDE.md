@@ -40,20 +40,17 @@ Ask first:
 ## Project Structure
 
 ```
-.actor/
-├── actor.json           # Actor config: name, version, env vars, runtime settings
-├── input_schema.json    # Input validation & Console form definition
-└── output_schema.json   # Specifies where an Actor stores its output
-src/
-├── __init__.py          # Package init
-├── __main__.py          # Entry point for `python -m src`
-└── main.py              # Actor entry point and orchestrator
-storage/                 # Local storage (mirrors Cloud during development)
-├── datasets/            # Output items (JSON objects)
-├── key_value_stores/    # Files, config, INPUT
-└── request_queues/      # Pending crawl requests
-requirements.txt         # Python dependencies
-Dockerfile               # Container image definition
+packages/
+└── contextractor_engine/   # Shared extraction engine (TrafilaturaConfig, ContentExtractor)
+apps/
+├── contextractor-apify/    # Apify Actor (cloud platform)
+│   ├── .actor/             # Actor config, schemas
+│   └── src/                # Actor entry point and handlers
+├── contextractor-standalone/  # Standalone CLI (no Apify dependency)
+│   ├── src/contextractor_cli/ # CLI app (typer + crawlee)
+│   ├── npm/                # npm package wrapper (JS + binaries)
+│   └── build.py            # PyInstaller build script
+Dockerfile               # Container image for Apify Actor
 CLAUDE.md                # AI agent instructions (this file)
 ```
 

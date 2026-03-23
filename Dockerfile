@@ -12,13 +12,13 @@ COPY --chown=myuser:myuser pyproject.toml uv.lock ./
 COPY --chown=myuser:myuser packages/contextractor_engine/ ./packages/contextractor_engine/
 
 # Copy actor package
-COPY --chown=myuser:myuser apps/contextractor/ ./apps/contextractor/
+COPY --chown=myuser:myuser apps/contextractor-apify/ ./apps/contextractor-apify/
 
 # Install dependencies
-RUN uv sync --frozen --no-dev --directory apps/contextractor
+RUN uv sync --frozen --no-dev --directory apps/contextractor-apify
 
 # Compile
-RUN python3 -m compileall -q apps/contextractor/src/
+RUN python3 -m compileall -q apps/contextractor-apify/src/
 
-WORKDIR /home/myuser/apps/contextractor
+WORKDIR /home/myuser/apps/contextractor-apify
 CMD ["uv", "run", "python3", "-m", "src"]
